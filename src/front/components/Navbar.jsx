@@ -47,7 +47,11 @@ export const Navbar = () => {
     // =====================================================
 
     const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
         logout(dispatch);
+
         navigate("/login");
     };
 
@@ -122,10 +126,14 @@ export const Navbar = () => {
 
                     <Nav className="d-flex flex-row align-items-center gap-4">
 
-                        {store.token ? (
+                        {localStorage.getItem("token") ? (
                             <>
-                                <span className="text-light d-none d-md-block">
-                                    {store.user?.email}
+                                <span className="text-light d-none d-md-block fw-bold">
+                                    Hola {
+                                        JSON.parse(
+                                            localStorage.getItem("user")
+                                        )?.email
+                                    }
                                 </span>
 
                                 <NotificationBell />
