@@ -1,58 +1,55 @@
-// src/front/hooks/useNotifications.jsx
-import { useEffect } from 'react';
-import useGlobalReducer from './useGlobalReducer.jsx'; 
+import { useEffect, useCallback } from "react";
+import useGlobalReducer from "./useGlobalReducer.jsx";
+import { api } from "../services/api";
+
+const POLL_INTERVAL = 5000;
 
 export const useNotifications = () => {
-    const { store, dispatch } = useGlobalReducer(); 
+  const { store, dispatch } = useGlobalReducer();
 
-    // Ajusta la variable de entorno según cómo la tengas en tu proyecto (VITE_BACKEND_URL o similar)
-    const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api";
+  const fetchNotifications = useCallback(async () => {
+    if (!store.token) return;
+    try {
+      const data = await api.get("/notifications");
+      dispatch({ type: "set_notifications", payload: data });
+    } catch (e) { console.error(e); }
+  }, [store.token, dispatch]);
 
-    const fetchNotifications = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+  const fetchUnreadCount = useCallback(async () => {
+    if (!store.token) return;
+    try {
+      const { count } = await api.get("/notifications/unread-count");
+      dispatch({ type: "set_unread_count", payload: count });
+    } catch (e) { /* silencioso */ }
+  }, [store.token, dispatch]);
 
-            const response = await fetch(`${API_URL}/notifications`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+  const markAsRead = useCallback(async (id) => {
+    try {
+      await api.post(`/notifications/${id}/read`);
+      dispatch({ type: "mark_notification_read", payload: id });
+    } catch (e) { console.error(e); }
+  }, [dispatch]);
 
-            if (response.ok) {
-                const data = await response.json();
-                dispatch({ type: 'set_notifications', payload: data });
-            }
-        } catch (error) {
-            console.error("Error al obtener notificaciones:", error);
-        }
-    };
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await api.post("/notifications/read-all");
+      dispatch({ type: "mark_all_notifications_read" });
+    } catch (e) { console.error(e); }
+  }, [dispatch]);
 
-    const markAsRead = async (id) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/notifications/${id}/read`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+  useEffect(() => {
+    if (!store.token) return;
+    fetchUnreadCount();
+    const id = setInterval(fetchUnreadCount, POLL_INTERVAL);
+    return () => clearInterval(id);
+  }, [store.token, fetchUnreadCount]);
 
-            if (response.ok) {
-                dispatch({ type: 'remove_notification', payload: id });
-            }
-        } catch (error) {
-            console.error("Error al marcar como leída:", error);
-        }
-    };
-
-    return { 
-        fetchNotifications, 
-        markAsRead, 
-        notifications: store.notifications,
-        unreadCount: store.unreadCount
-    };
+  return {
+    notifications: store.notifications,
+    unreadCount: store.unreadCount,
+    fetchNotifications,
+    fetchUnreadCount,
+    markAsRead,
+    markAllAsRead,
+  };
 };

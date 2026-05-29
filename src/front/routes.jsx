@@ -1,9 +1,7 @@
-// Import necessary components and functions from react-router-dom.
-
 import {
-	createBrowserRouter,
-	createRoutesFromElements,
-	Route,
+    createBrowserRouter,
+    createRoutesFromElements,
+    Route,
 } from "react-router-dom";
 
 import { Layout } from "./pages/Layout";
@@ -14,35 +12,20 @@ import { Register } from "./pages/Register";
 import { Login } from "./pages/Login";
 import { Friends } from "./pages/Friends";
 import { FriendProfile } from "./pages/FriendProfile";
+import Messages from "./pages/Messages";
 
 export const router = createBrowserRouter(
-	createRoutesFromElements(
-
-		// Root Route
-		<Route
-			path="/"
-			element={<Layout />}
-			errorElement={<h1>Not found!</h1>}
-		>
-
-			{/* Home */}
-			<Route path="/" element={<Home />} />
-
-			{/* Demo */}
-			<Route path="/demo" element={<Demo />} />
-
-			{/* Single */}
-			<Route path="/single/:theId" element={<Single />} />
-
-			{/* Register */}
-			<Route path="/register" element={<Register />} />
-
-			<Route path="/login" element={<Login />} />
-
-			{/* Friends */}
-			<Route path="/friends" element={<Friends />} />
-
-			<Route path="/friends/:userId" element={<FriendProfile />} />
-		</Route>
-	)
+    createRoutesFromElements(
+        <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
+            <Route path="/" element={<Home />} />
+            <Route path="/demo" element={<Demo />} />
+            <Route path="/single/:theId" element={<Single />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/friends/:userId" element={<FriendProfile />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:conversationId" element={<Messages />} />
+        </Route>
+    )
 );
