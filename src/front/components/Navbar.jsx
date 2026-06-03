@@ -32,6 +32,7 @@ import {
     FiEdit2,
     FiCheck,
     FiX,
+    FiMaximize2,
 } from "react-icons/fi";
 
 // =====================================================
@@ -39,8 +40,7 @@ import {
 // =====================================================
 const API = import.meta.env.VITE_BACKEND_URL;
 
-// Same window the backend enforces (15 min). Keeping it identical
-// avoids showing an Edit button that would 409 server-side.
+// Same window the backend enforces (15 min).
 const CHAT_EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 const authHeaders = () => ({
@@ -330,6 +330,22 @@ const NAVBAR_CSS = `
   50%      { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
 }
 
+/* Fullscreen button in chat modal header */
+.sq-chat-fullscreen-btn {
+  border: 1px solid #262a36 !important;
+  background: transparent !important;
+  color: #adb5bd !important;
+  padding: 0.25rem 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.sq-chat-fullscreen-btn:hover {
+  border-color: #6366f1 !important;
+  color: #fff !important;
+  background: rgba(99,102,241,0.1) !important;
+}
+
 /* Hamburger dropdown */
 .sq-menu-toggle.dropdown-toggle::after { display: none; }
 .sq-menu-toggle {
@@ -373,6 +389,7 @@ const getChatLabel = (room, currentUserId) => {
 
 const getPreviewText = (last) => {
     if (!last) return null;
+    if (last.deleted) return "Mensaje eliminado";
     if (last.text) return last.text;
     if (last.media_type === "image") return "📷 Foto";
     if (last.media_type === "audio") return "🎤 Audio";
@@ -394,10 +411,9 @@ const formatPreviewTime = (iso) => {
 };
 
 // Can the current user edit this message right now?
-// Rules: must be the sender, must have text, must be within the 15-min window.
 const canEditMessage = (m, currentUserId) => {
     if (m.sender_id !== currentUserId) return false;
-    if (!m.text) return false;
+    if (!m.text || m.deleted) return false;
     const created = new Date(m.created_at).getTime();
     if (Number.isNaN(created)) return false;
     return Date.now() - created < CHAT_EDIT_WINDOW_MS;
@@ -453,7 +469,7 @@ export const Navbar = () => {
     }, [isLogged, location.pathname]);
 
     // =====================================================
-    // LOAD CHAT ROOMS + POLL (keeps the unread badge fresh)
+    // LOAD CHAT ROOMS + POLL
     // =====================================================
     useEffect(() => {
         if (!isLogged) return;
@@ -520,7 +536,6 @@ export const Navbar = () => {
         setSearchResults(null);
         cancelEdit();
 
-        // Mark as read both locally (instant badge update) and server-side.
         if (room?.id) {
             dispatch({ type: "mark_room_read_local", payload: room.id });
             markRoomRead(room.id);
@@ -533,7 +548,6 @@ export const Navbar = () => {
         setReplyText("");
         cancelEdit();
         stopRecording(true);
-        // refresh rooms so previews/counts are up-to-date
         getChatRooms(dispatch);
     };
 
@@ -676,6 +690,14 @@ export const Navbar = () => {
         setSearchResults(null);
     };
 
+    // Abre el chat actual como página dedicada
+    const openInFullscreen = () => {
+        if (!activeRoom) return;
+        const id = activeRoom.id;
+        closeChatModal();
+        navigate(`/messages/${id}`);
+    };
+
     // =====================================================
     // RENDER
     // =====================================================
@@ -720,7 +742,6 @@ export const Navbar = () => {
                                         </Badge>
                                     )}
                                 </Button>
-                            {/* Verifica esto */}
 
                                 <Dropdown align="end">
                                     <Dropdown.Toggle
@@ -743,6 +764,10 @@ export const Navbar = () => {
 
                                         <Dropdown.Item as={Link} to="/events">
                                             <FiCalendar className="me-2" /> Mis Eventos
+                                        </Dropdown.Item>
+
+                                        <Dropdown.Item as={Link} to="/messages">
+                                            <FiMail className="me-2" /> Mis Chats
                                         </Dropdown.Item>
 
                                         <Dropdown.Divider />
@@ -782,20 +807,33 @@ export const Navbar = () => {
                 dialogClassName="sq-chat-modal"
             >
                 <Modal.Header closeButton closeVariant="white">
-                    <Modal.Title className="d-flex align-items-center gap-2">
+                    <Modal.Title className="d-flex align-items-center gap-2 flex-grow-1">
                         {activeRoom && (
                             <Button
                                 variant="dark"
                                 size="sm"
                                 className="border-0 p-1"
                                 onClick={backToList}
+                                title="Volver a la lista"
                             >
                                 <FiArrowLeft />
                             </Button>
                         )}
-                        {activeRoom
-                            ? getChatLabel(activeRoom, currentUserId)
-                            : "Tus Chats"}
+                        <span className="flex-grow-1">
+                            {activeRoom
+                                ? getChatLabel(activeRoom, currentUserId)
+                                : "Tus Chats"}
+                        </span>
+                        {activeRoom && (
+                            <Button
+                                size="sm"
+                                className="sq-chat-fullscreen-btn"
+                                onClick={openInFullscreen}
+                                title="Abrir en pantalla completa"
+                            >
+                                <FiMaximize2 />
+                            </Button>
+                        )}
                     </Modal.Title>
                 </Modal.Header>
 
@@ -886,8 +924,9 @@ export const Navbar = () => {
                                     messages.map((m) => {
                                         const mine = m.sender_id === currentUserId;
                                         const isEditing = editingMsgId === m.id;
-                                        const hasImage = m.media_type === "image" && m.media_url;
-                                        const hasAudio = m.media_type === "audio" && m.media_url;
+                                        const isDeleted = m.deleted;
+                                        const hasImage = !isDeleted && m.media_type === "image" && m.media_url;
+                                        const hasAudio = !isDeleted && m.media_type === "audio" && m.media_url;
                                         const showEditBtn = canEditMessage(m, currentUserId) && !isEditing;
                                         return (
                                             <div
@@ -930,27 +969,35 @@ export const Navbar = () => {
                                                     </div>
                                                 ) : (
                                                     <div className="bubble">
-                                                        {hasImage && (
-                                                            <img
-                                                                src={m.media_url}
-                                                                alt="foto"
-                                                                className="sq-chat-img"
-                                                            />
+                                                        {isDeleted ? (
+                                                            <em style={{ color: "rgba(255,255,255,0.6)" }}>
+                                                                🚫 Mensaje eliminado
+                                                            </em>
+                                                        ) : (
+                                                            <>
+                                                                {hasImage && (
+                                                                    <img
+                                                                        src={m.media_url}
+                                                                        alt="foto"
+                                                                        className="sq-chat-img"
+                                                                    />
+                                                                )}
+                                                                {hasAudio && (
+                                                                    <audio
+                                                                        controls
+                                                                        src={m.media_url}
+                                                                        className="sq-chat-audio"
+                                                                    />
+                                                                )}
+                                                                {m.text && <div>{m.text}</div>}
+                                                            </>
                                                         )}
-                                                        {hasAudio && (
-                                                            <audio
-                                                                controls
-                                                                src={m.media_url}
-                                                                className="sq-chat-audio"
-                                                            />
-                                                        )}
-                                                        {m.text && <div>{m.text}</div>}
                                                     </div>
                                                 )}
 
                                                 <div className="meta">
                                                     {new Date(m.created_at).toLocaleString()}
-                                                    {m.edited_at && (
+                                                    {m.edited_at && !isDeleted && (
                                                         <span className="meta-edited">(editado)</span>
                                                     )}
                                                     {showEditBtn && (

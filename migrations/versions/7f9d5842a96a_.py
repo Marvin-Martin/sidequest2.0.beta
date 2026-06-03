@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 52e92a5f6f9c
+Revision ID: 7f9d5842a96a
 Revises: 
-Create Date: 2026-06-03 09:58:53.326053
+Create Date: 2026-06-03 15:44:01.742745
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '52e92a5f6f9c'
+revision = '7f9d5842a96a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -136,8 +136,9 @@ def upgrade():
     sa.Column('media_type', sa.String(length=20), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('edited_at', sa.DateTime(), nullable=True),
+    sa.Column('deleted', sa.Boolean(), server_default='false', nullable=False),
     sa.CheckConstraint("media_type IS NULL OR media_type IN ('image', 'audio')", name='ck_chat_message_media_type'),
-    sa.CheckConstraint('(text IS NOT NULL) OR (media_url IS NOT NULL)', name='ck_chat_message_payload'),
+    sa.CheckConstraint('deleted = TRUE OR (text IS NOT NULL) OR (media_url IS NOT NULL)', name='ck_chat_message_payload'),
     sa.ForeignKeyConstraint(['room_id'], ['chat_room.id'], ),
     sa.ForeignKeyConstraint(['sender_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')

@@ -11,8 +11,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 db = SQLAlchemy()
 
 # ── Association table for event participants (accepted only) ─────────
-# Pending invitations live in `event_invitation` instead. Once an invitee
-# accepts, their row is moved here and the invitation is deleted.
 event_participants = Table(
     "event_participants",
     db.metadata,
@@ -30,7 +28,6 @@ class User(db.Model):
     password:  Mapped[str]  = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
-    # ── profile fields ──────────────────────────────
     username:            Mapped[str] = mapped_column(String(50),  unique=True, nullable=True)
     first_name:          Mapped[str] = mapped_column(String(50),  nullable=True)
     last_name:           Mapped[str] = mapped_column(String(50),  nullable=True)
@@ -128,7 +125,6 @@ class Event(db.Model):
                 data["my_status"] = "pending"
             else:
                 data["my_status"] = "none"
-            # invitation_id is handy for client-side accept/refuse routing
             my_inv = next((inv for inv in (self.invitations or []) if inv.user_id == current_user_id), None)
             data["my_invitation_id"] = my_inv.id if my_inv else None
         return data
@@ -178,9 +174,6 @@ class Friendship(db.Model):
 
 
 # ── EVENT INVITATION ─────────────────────────────────────────
-# Pending only. When the invitee accepts, the row is deleted and the user
-# is added to event_participants. When the invitee refuses, the row is
-# deleted with no further effect (no historical "refused" rows kept).
 class EventInvitation(db.Model):
     __tablename__ = "event_invitation"
 
@@ -209,10 +202,6 @@ class EventInvitation(db.Model):
 
 
 # ── CHAT ROOM ─────────────────────────────────────────────
-# Two flavours of rooms share the same table:
-#   - "event" : tied to an event via event_id. Membership = event.participants.
-#   - "dm"    : 1-on-1 chat between user_a_id and user_b_id, stored in
-#               canonical order (user_a_id < user_b_id).
 class ChatRoom(db.Model):
     __tablename__ = "chat_room"
 
@@ -239,7 +228,11 @@ class ChatRoom(db.Model):
     )
 
     def serialize(self, current_user_id=None):
-        last = self.messages[-1] if self.messages else None
+        # Pick the last *visible* (non-deleted) message as preview
+        last = next(
+            (m for m in reversed(self.messages) if not m.deleted),
+            None,
+        )
         last_message = None
         if last:
             last_message = {
@@ -251,10 +244,10 @@ class ChatRoom(db.Model):
                 "sender_email": last.sender.email if last.sender else None,
                 "created_at":   last.created_at.isoformat() + "Z" if last.created_at else None,
                 "edited_at":    last.edited_at.isoformat() + "Z" if last.edited_at else None,
+                "deleted":      last.deleted,
             }
 
-        # unread count for the current user — messages newer than their
-        # last_read_at on this room and not authored by themselves.
+        # unread count — deleted messages don't count
         unread_count = 0
         if current_user_id is not None:
             membership = next(
@@ -265,6 +258,8 @@ class ChatRoom(db.Model):
             for msg in self.messages:
                 if msg.sender_id == current_user_id:
                     continue
+                if msg.deleted:
+                    continue
                 if last_read_at is None or msg.created_at > last_read_at:
                     unread_count += 1
 
@@ -273,7 +268,7 @@ class ChatRoom(db.Model):
             "type":           self.type,
             "event_id":       self.event_id,
             "created_at":     self.created_at.isoformat() + "Z" if self.created_at else None,
-            "messages_count": len(self.messages),
+            "messages_count": len([m for m in self.messages if not m.deleted]),
             "unread_count":   unread_count,
             "last_message":   last_message,
         }
@@ -308,9 +303,6 @@ class ChatRoom(db.Model):
 
 
 # ── CHAT ROOM MEMBERSHIP ──────────────────────────────────
-# Tracks per-user "last read" timestamp for a room. Created on demand
-# the first time a user opens the room. Used to compute the unread
-# message count shown in the navbar badge.
 class ChatRoomMembership(db.Model):
     __tablename__ = "chat_room_membership"
 
@@ -338,11 +330,9 @@ class ChatRoomMembership(db.Model):
 
 
 # ── CHAT MESSAGE ──────────────────────────────────────────
-# A message has either text, media_url, or both. media_type qualifies
-# the attachment ("image" | "audio"). The media payload itself lives in
-# media_url as a base64 dataURL (same approach used by event.image).
-# edited_at is set when the sender edits the text within the allowed
-# window (15 min) — see PUT /chat/rooms/<rid>/messages/<mid>.
+# Now supports soft-delete via the `deleted` flag. A deleted message keeps
+# its row (for thread positioning) but the content is hidden in serialize().
+# The CheckConstraint lets text/media be NULL only when deleted.
 class ChatMessage(db.Model):
     __tablename__ = "chat_message"
 
@@ -354,13 +344,18 @@ class ChatMessage(db.Model):
     media_type: Mapped[str] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     edited_at:  Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    deleted:    Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
     room:   Mapped["ChatRoom"] = relationship("ChatRoom", back_populates="messages")
     sender: Mapped["User"]     = relationship("User", foreign_keys=[sender_id])
 
     __table_args__ = (
+        # New rule: a non-deleted message must carry text or media.
+        # A deleted message is allowed to have both NULL.
         CheckConstraint(
-            "(text IS NOT NULL) OR (media_url IS NOT NULL)",
+            "deleted = TRUE OR (text IS NOT NULL) OR (media_url IS NOT NULL)",
             name="ck_chat_message_payload",
         ),
         CheckConstraint(
@@ -370,6 +365,19 @@ class ChatMessage(db.Model):
     )
 
     def serialize(self):
+        if self.deleted:
+            return {
+                "id":           self.id,
+                "room_id":      self.room_id,
+                "sender_id":    self.sender_id,
+                "sender_email": self.sender.email if self.sender else None,
+                "text":         None,
+                "media_url":    None,
+                "media_type":   None,
+                "deleted":      True,
+                "created_at":   self.created_at.isoformat() + "Z" if self.created_at else None,
+                "edited_at":    self.edited_at.isoformat() + "Z" if self.edited_at else None,
+            }
         return {
             "id":           self.id,
             "room_id":      self.room_id,
@@ -378,18 +386,13 @@ class ChatMessage(db.Model):
             "text":         self.text,
             "media_url":    self.media_url,
             "media_type":   self.media_type,
+            "deleted":      False,
             "created_at":   self.created_at.isoformat() + "Z" if self.created_at else None,
             "edited_at":    self.edited_at.isoformat() + "Z" if self.edited_at else None,
         }
 
 
 # ── NOTIFICATION ──────────────────────────────────────────
-# Types currently emitted:
-#   - "friend_request"  payload: {"friendship_id": int, "from_user_id": int, "from_email": str}
-#   - "event_invite"    payload: {"event_id": int, "invitation_id": int,
-#                                 "from_user_id": int, "from_email": str,
-#                                 "event_title": str|None, "event_date": str|None,
-#                                 "event_time": str|None}
 class Notification(db.Model):
     __tablename__ = "notification"
 

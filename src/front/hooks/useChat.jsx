@@ -4,72 +4,120 @@ import { api } from "../services/api";
 const POLL_INTERVAL = 3000;
 
 /**
- * Hook para gestionar una conversación abierta.
- * - Carga mensajes
- * - Polling cada 3s
- * - sendMessage con UI optimista
- * - markRead al montar
+ * Hook para gestionar UNA sala de chat abierta.
+ * Usa los endpoints reales /chat/rooms/<id>/messages.
+ *
+ * sendMessage acepta:
+ *   - sendMessage("hola")
+ *   - sendMessage({ text: "hola" })
+ *   - sendMessage({ media_url: "data:...", media_type: "image" })
+ *   - sendMessage({ media_url: "data:...", media_type: "audio" })
  */
-export const useChat = (conversationId) => {
+export const useChat = (roomId) => {
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [sending, setSending]   = useState(false);
   const lastIdRef = useRef(0);
 
   const fetchMessages = useCallback(async () => {
-    if (!conversationId) return;
+    if (!roomId) return;
     try {
-      const data = await api.get(`/conversations/${conversationId}/messages`);
-      setMessages(data);
-      if (data.length) lastIdRef.current = data[data.length - 1].id;
-    } catch (e) { console.error(e); }
-  }, [conversationId]);
+      const data = await api.get(`/chat/rooms/${roomId}/messages`);
+      const list = data.messages || [];
+      setMessages(list);
+      if (list.length) lastIdRef.current = list[list.length - 1].id;
+    } catch (e) { console.error("fetchMessages:", e); }
+  }, [roomId]);
 
-  const sendMessage = useCallback(async (content) => {
-    if (!content?.trim() || !conversationId) return;
+  const sendMessage = useCallback(async (input) => {
+    if (!roomId || !input) return;
+    const body = typeof input === "string" ? { text: input } : { ...input };
+    if (body.text) body.text = body.text.trim();
+    if (!body.text && !body.media_url) return;
+
     setSending(true);
-
-    // UI optimista: el mensaje aparece al instante
+    const me = JSON.parse(localStorage.getItem("user") || "{}");
     const optimistic = {
       id: `tmp-${Date.now()}`,
-      conversation_id: conversationId,
-      sender_id: JSON.parse(localStorage.getItem("user") || "{}")?.id,
-      content,
-      is_read: false,
+      room_id: roomId,
+      sender_id: me?.id,
+      sender_email: me?.email,
+      text: body.text || null,
+      media_url: body.media_url || null,
+      media_type: body.media_type || null,
+      deleted: false,
       created_at: new Date().toISOString(),
+      edited_at: null,
       _optimistic: true,
     };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages((p) => [...p, optimistic]);
 
     try {
-      const saved = await api.post(`/conversations/${conversationId}/messages`, { content });
-      // reemplazamos el optimista por el real
-      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? saved : m)));
+      const resp = await api.post(`/chat/rooms/${roomId}/messages`, body);
+      const saved = resp.message;
+      setMessages((p) => p.map((m) => (m.id === optimistic.id ? saved : m)));
     } catch (e) {
-      // marca el optimista como fallido
-      setMessages((prev) =>
-        prev.map((m) => (m.id === optimistic.id ? { ...m, _failed: true } : m))
+      setMessages((p) =>
+        p.map((m) => (m.id === optimistic.id ? { ...m, _failed: true } : m))
       );
-      console.error(e);
+      console.error("sendMessage:", e);
     } finally {
       setSending(false);
     }
-  }, [conversationId]);
+  }, [roomId]);
+
+  const editMessage = useCallback(async (msgId, newText) => {
+    if (!roomId || !msgId || !newText?.trim()) return;
+    setMessages((p) => p.map((m) =>
+      m.id === msgId
+        ? { ...m, text: newText, edited_at: new Date().toISOString() }
+        : m
+    ));
+    try {
+      const resp = await api.put(`/chat/rooms/${roomId}/messages/${msgId}`, { text: newText });
+      const saved = resp.message;
+      setMessages((p) => p.map((m) => (m.id === msgId ? saved : m)));
+    } catch (e) {
+      console.error("editMessage:", e);
+      fetchMessages();
+    }
+  }, [roomId, fetchMessages]);
+
+  const deleteMessage = useCallback(async (msgId) => {
+    if (!roomId || !msgId) return;
+    setMessages((p) => p.map((m) =>
+      m.id === msgId
+        ? { ...m, deleted: true, text: null, media_url: null, media_type: null }
+        : m
+    ));
+    try {
+      await api.del(`/chat/rooms/${roomId}/messages/${msgId}`);
+    } catch (e) {
+      console.error("deleteMessage:", e);
+      fetchMessages();
+    }
+  }, [roomId, fetchMessages]);
 
   const markRead = useCallback(async () => {
-    if (!conversationId) return;
-    try { await api.post(`/conversations/${conversationId}/read`); } catch (e) {}
-  }, [conversationId]);
+    if (!roomId) return;
+    try { await api.put(`/chat/rooms/${roomId}/read`); } catch (_) { /* best-effort */ }
+  }, [roomId]);
 
-  // Carga inicial + polling + markRead al abrir
   useEffect(() => {
-    if (!conversationId) return;
+    if (!roomId) {
+      setMessages([]);
+      return;
+    }
     setLoading(true);
     fetchMessages().finally(() => setLoading(false));
     markRead();
     const id = setInterval(fetchMessages, POLL_INTERVAL);
     return () => clearInterval(id);
-  }, [conversationId, fetchMessages, markRead]);
+  }, [roomId, fetchMessages, markRead]);
 
-  return { messages, loading, sending, sendMessage, refetch: fetchMessages };
+  return {
+    messages, loading, sending,
+    sendMessage, editMessage, deleteMessage,
+    refetch: fetchMessages, markRead,
+  };
 };
