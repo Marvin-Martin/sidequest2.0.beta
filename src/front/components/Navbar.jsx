@@ -38,13 +38,13 @@ import {
 
 // Options for the map time filter (number of days). null = no filter.
 const MAP_FILTER_OPTIONS = [
-    { value: null, label: "Todos" },
-    { value: 1,    label: "Hoy y mañana" },
-    { value: 3,    label: "Próximos 3 días" },
-    { value: 7,    label: "Próxima semana" },
-    { value: 14,   label: "Próximas 2 semanas" },
-    { value: 30,   label: "Próximo mes" },
-    { value: 90,   label: "Próximos 3 meses" },
+    { value: null, label: "All" },
+    { value: 1,    label: "Today and tomorrow" },
+    { value: 3,    label: "Nexts 3 days" },
+    { value: 7,    label: "Next Week" },
+    { value: 14,   label: "Nexts 2 weeks" },
+    { value: 30,   label: "Next mounth" },
+    { value: 90,   label: "nexts 3 mounth" },
 ];
 
 const labelForFilter = (val) =>
@@ -398,6 +398,28 @@ const NAVBAR_CSS = `
 @media (max-width: 575.98px) {
   .sq-navbar .navbar-brand { font-size: 1.5rem; }
   .sq-hide-xs { display: none !important; }
+
+  /* Chat modal goes near full-screen on phones — maximises room for
+     the thread instead of wasting 24px of side gutter. */
+  .sq-chat-modal .modal-dialog {
+    margin: 4px;
+    width: calc(100vw - 8px);
+    max-width: calc(100vw - 8px);
+  }
+  .sq-chat-modal .modal-content { border-radius: 10px; }
+  .sq-chat-modal .modal-body { padding: 0.75rem; }
+  .sq-chat-modal .modal-header { padding: 0.65rem 0.85rem; }
+  .sq-chat-modal .modal-footer { padding: 0.55rem 0.85rem; }
+
+  /* Chat thread takes more of the available vertical room. */
+  .sq-chat-thread { height: 58vh; }
+
+  /* Tighter card spacing in the chat list */
+  .sq-chat-card { padding: 0.5rem 0.6rem; gap: 0.55rem; }
+  .sq-chat-avatar, .sq-chat-avatar-fallback { width: 48px; height: 48px; }
+
+  /* Section titles in search results — slightly smaller margin */
+  .sq-chat-section-title { margin: 0.5rem 0 0.35rem 0.1rem; }
 }
 `;
 
@@ -850,18 +872,18 @@ export const Navbar = () => {
 
                                     <Dropdown.Menu className="sq-menu-dropdown">
                                         <Dropdown.Header>
-                                            Hola {cachedUser?.username
+                                            Hey{cachedUser?.username
                                                 ? `@${cachedUser.username}`
                                                 : (cachedUser?.email || "—")}
                                         </Dropdown.Header>
                                         <Dropdown.Divider />
 
                                         <Dropdown.Item as={Link} to="/events">
-                                            <FiCalendar className="me-2" /> Mis Eventos
+                                            <FiCalendar className="me-2" /> My Events
                                         </Dropdown.Item>
 
                                         <Dropdown.Item as={Link} to="/messages">
-                                            <FiMail className="me-2" /> Mis Chats
+                                            <FiMail className="me-2" /> Chatroom
                                         </Dropdown.Item>
 
                                         <Dropdown.Divider />
@@ -870,7 +892,7 @@ export const Navbar = () => {
                                             onClick={handleLogout}
                                             className="sq-menu-logout"
                                         >
-                                            <FiLogOut className="me-2" /> Salir
+                                            <FiLogOut className="me-2" /> Logout
                                         </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>

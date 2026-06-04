@@ -151,6 +151,42 @@ const CSS = `
 .status-pill.pending  { background: #facc15 !important; color: #0b0d12 !important; }
 .status-pill.accepted { background: #4f46e5 !important; }
 .status-pill.creator  { background: #22d3ee !important; color: #0b0d12 !important; }
+
+/* ── XS / small phones (< 576px) ─────────────────────────── */
+@media (max-width: 575.98px) {
+  .events-list-page { padding-top: 70px; padding-bottom: 90px; }
+  .events-list-page h1 { font-size: 1.35rem; }
+  .events-list-page > .container { padding-left: 0.85rem; padding-right: 0.85rem; }
+
+  /* The 4 tabs (All/Created/Invitado/Past) overflow horizontally on
+     narrow screens — scroll instead of wrap. */
+  .events-list-page .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .events-list-page .nav-tabs::-webkit-scrollbar { display: none; }
+  .events-list-page .nav-tabs .nav-link {
+    white-space: nowrap;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  /* Card body tighter padding */
+  .event-card .card-body { padding: 0.85rem; }
+  .event-card-img, .event-card-noimg { height: 120px; }
+
+  /* The title row can hold title + pills + 📍. On very narrow screens
+     give the right-side cluster the freedom to wrap to the next line. */
+  .event-card .card-body > .d-flex {
+    flex-wrap: wrap;
+  }
+
+  /* Response bar buttons tighter */
+  .rsvp-bar { gap: 3px; }
+  .rsvp-btn { font-size: 0.7rem; padding: 5px 1px; }
+}
 `;
 
 // =============================================================

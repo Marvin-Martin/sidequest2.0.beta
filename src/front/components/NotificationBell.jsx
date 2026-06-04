@@ -49,7 +49,12 @@ const BELL_CSS = `
 .sq-bell-menu {
   background: #161922; border: 1px solid #262a36;
   color: #e9ecef;
-  width: 360px; max-height: 480px;
+  width: 360px;
+  /* Never extend beyond the viewport — caps at screen width minus a
+     small gutter so the dropdown never gets clipped on the right edge
+     on phones narrower than 360px. */
+  max-width: calc(100vw - 16px);
+  max-height: 480px;
   overflow-y: auto;
   padding: 0;
 }
@@ -136,6 +141,28 @@ const BELL_CSS = `
   margin-left: auto;
 }
 .sq-bell-close:hover { color: #ff8a8a !important; }
+
+/* ── XS / small phones (< 576px) ─────────────────────────── */
+@media (max-width: 575.98px) {
+  .sq-bell-menu { max-height: 70vh; }
+  .sq-bell-item {
+    padding: 0.55rem 0.7rem;
+    gap: 0.5rem;
+  }
+  .sq-bell-msg { font-size: 0.82rem; }
+  .sq-bell-time { font-size: 0.62rem; }
+  .sq-bell-actions { gap: 0.25rem; margin-top: 0.4rem; }
+  .sq-bell-btn {
+    font-size: 0.66rem !important;
+    padding: 0.14rem 0.45rem !important;
+  }
+  .sq-bell-avatar { width: 34px; height: 34px; border-radius: 8px; }
+  .sq-bell-header {
+    padding: 0.55rem 0.75rem;
+  }
+  .sq-bell-title { font-size: 0.88rem; }
+  .sq-bell-mark-all { font-size: 0.65rem !important; padding: 0.15rem 0.45rem !important; }
+}
 `;
 
 // =====================================================

@@ -486,4 +486,25 @@ const CSS = `
 .cal-rsvp-btn.active.maybe     { background: rgba(250,204,21,0.15); border-color: #facc15; color: #facc15; }
 .cal-rsvp-btn.active.not_going { background: rgba(244,63,94,0.15);  border-color: #f43f5e; color: #f43f5e; }
 .cal-rsvp-btn:disabled { opacity: 0.45; pointer-events: none; }
+
+/* ── XS / small phones (< 576px) ─────────────────────────── */
+@media (max-width: 575.98px) {
+  /* Cells shrink so the 7-column grid still fits comfortably. The pills
+     inside truncate but no longer overflow horizontally. */
+  .cal-cell {
+    min-height: 64px;
+    padding: 2px 1px;
+  }
+  .cal-num { font-size: 0.7rem; padding-right: 2px; }
+  .cal-pill { padding: 1px 3px; margin-bottom: 1px; }
+  .cal-pill-title { font-size: 0.6rem; }
+  .cal-pill-time { font-size: 0.55rem; }
+  .cal-more { font-size: 0.55rem; }
+
+  /* Day-of-week labels shorter */
+  /* (the JS shows 3-letter days already — just shrink the font) */
+
+  /* Response bar buttons fit on a single line by shrinking text */
+  .cal-rsvp-btn { font-size: 0.62rem; padding: 3px 4px; }
+}
 `;

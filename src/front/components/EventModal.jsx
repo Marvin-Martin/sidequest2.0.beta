@@ -338,6 +338,58 @@ body.modal-open .bottom-navbar { display: none; }
 }
 .sq-friend-checkbox-row:hover { background: #1e2230; }
 .sq-friend-checkbox-row.selected { background: rgba(99,102,241,0.12); }
+
+/* ── XS / small phones (< 576px) ─────────────────────────── */
+@media (max-width: 575.98px) {
+  /* Modal near full-screen → max room for content. */
+  .event-modal .modal-dialog {
+    margin: 4px;
+    width: calc(100vw - 8px);
+    max-width: calc(100vw - 8px);
+  }
+  .event-modal .modal-content { border-radius: 10px; }
+  .event-modal .modal-body { padding: 0.85rem; }
+  .event-modal .modal-header { padding: 0.65rem 0.85rem; }
+  .event-modal .modal-footer { padding: 0.55rem 0.85rem; gap: 0.4rem; }
+
+  /* Tabs scroll horizontally instead of wrapping into 2 rows */
+  .event-modal .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .event-modal .nav-tabs::-webkit-scrollbar { display: none; }
+  .event-modal .nav-tabs .nav-link {
+    white-space: nowrap;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* Response bar: tighter padding, smaller text */
+  .sq-response-bar { padding: 7px; gap: 4px; margin-bottom: 0.75rem; }
+  .sq-response-btn {
+    padding: 6px 4px;
+    font-size: 0.76rem;
+    gap: 4px;
+  }
+
+  /* Chat tab box uses more vertical room */
+  .chat-box { height: 50vh; }
+  .chat-msg .bubble { max-width: 90%; }
+
+  /* Creator row tighter on phones */
+  .sq-creator-row { padding: 0.4rem 0; }
+  .sq-creator-avatar { width: 30px; height: 30px; }
+
+  /* Suggestion rows + friend rows fold gracefully */
+  .sq-suggestion-row, .sq-friend-checkbox-row {
+    padding: 0.45rem 0.55rem; gap: 0.5rem;
+  }
+
+  /* Section labels in form */
+  .event-modal .form-label { font-size: 0.72rem; margin-bottom: 0.2rem; }
+}
 `;
 
 // =============================================================
@@ -1414,7 +1466,7 @@ export const EventModal = ({
                         onClick={handleLeave}
                         disabled={leaving}
                       >
-                        {leaving ? <Spinner size="sm" animation="border" /> : <><FiLogOut className="me-1" /> Salir del evento</>}
+                        {leaving ? <Spinner size="sm" animation="border" /> : <><FiLogOut className="me-1" /> Leave the event</>}
                       </Button>
                     </div>
                   )}
@@ -1423,19 +1475,19 @@ export const EventModal = ({
                   {isCreator && (
                     <>
                       <div className="small text-secondary text-uppercase fw-semibold mb-2 d-flex justify-content-between align-items-center">
-                        <span>Invitar amigos</span>
+                        <span>Inite friends</span>
                         {selectedToInvite.size > 0 && (
                           <Button
                             size="sm"
                             variant="primary"
                             onClick={handleInviteBatch}
                           >
-                            <FiUserPlus className="me-1" /> Invitar ({selectedToInvite.size})
+                            <FiUserPlus className="me-1" /> Invite ({selectedToInvite.size})
                           </Button>
                         )}
                       </div>
                       {friendsAvailable.length === 0 ? (
-                        <div className="small text-secondary">No quedan amigos por invitar.</div>
+                        <div className="small text-secondary">There are no friends left to invite.</div>
                       ) : (
                         <div>
                           {friendsAvailable.map((u) => {
@@ -1489,7 +1541,7 @@ export const EventModal = ({
                   {!isCreator && eventData?.my_status === "accepted" && (
                     <>
                       <div className="small text-secondary text-uppercase fw-semibold mb-2 mt-4 d-flex justify-content-between align-items-center">
-                        <span>Sugerir invitar a un amigo</span>
+                        <span className="fs-5 text-primary">Suggest a friend</span>
                         {selectedToSuggest.size > 0 && (
                           <Button
                             size="sm"
@@ -1501,10 +1553,10 @@ export const EventModal = ({
                         )}
                       </div>
                       <div className="small text-secondary mb-2">
-                        El creador recibirá una notificación y decidirá si manda la invitación.
+                        The creator will receive a notification and decide whether to send the invitation.
                       </div>
                       {friendsAvailable.length === 0 ? (
-                        <div className="small text-secondary">No tienes amigos que no estén ya en el evento.</div>
+                        <div className="small text-secondary">You don't have any friends who aren't already in the event.</div>
                       ) : (
                         <div>
                           {friendsAvailable.map((u) => {
@@ -1549,11 +1601,11 @@ export const EventModal = ({
               ) : (
                 <>
                   <div className="small text-secondary text-uppercase fw-semibold mb-2">
-                    Invitar amigos (puedes añadir más después)
+                    Invite friends (You can add more later.)
                   </div>
                   {friends.length === 0 ? (
                     <div className="small text-secondary">
-                      Aún no tienes amigos. Añade alguno en la página Friends.
+                      You don't have any friends yet. Add some on the Friends page.
                     </div>
                   ) : (
                     <ListGroup>
@@ -1598,7 +1650,7 @@ export const EventModal = ({
                 eventKey="suggestions"
                 title={
                   <span>
-                    <FiUserCheck className="me-1" /> Sugerencias{" "}
+                    <FiUserCheck className="me-1" /> Suggestions{" "}
                     {suggestions.length > 0 && (
                       <Badge bg="warning" text="dark">{suggestions.length}</Badge>
                     )}
@@ -1611,13 +1663,13 @@ export const EventModal = ({
                   </div>
                 ) : suggestions.length === 0 ? (
                   <div className="text-center py-4 text-secondary small">
-                    No hay sugerencias pendientes.
+                    There are no pending suggestions.
                   </div>
                 ) : (
                   <>
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <span className="small text-secondary">
-                        {suggestions.length} sugerencia{suggestions.length === 1 ? "" : "s"} pendiente{suggestions.length === 1 ? "" : "s"}
+                        {suggestions.length} Suggestions{suggestions.length === 1 ? "" : "s"} Pending{suggestions.length === 1 ? "" : "s"}
                       </span>
                       <div className="d-flex gap-2">
                         <Button
