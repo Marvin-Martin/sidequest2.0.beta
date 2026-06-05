@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 92c0d1516fdc
+Revision ID: bc6cb1d27243
 Revises: 
-Create Date: 2026-06-04 18:17:48.754339
+Create Date: 2026-06-05 14:15:41.826214
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '92c0d1516fdc'
+revision = 'bc6cb1d27243'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -77,7 +77,7 @@ def upgrade():
     sa.Column('payload', sa.JSON(), nullable=False),
     sa.Column('is_read', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.CheckConstraint("type IN ('friend_request', 'event_invite', 'invite_suggestion', 'event_public')", name='ck_notification_type'),
+    sa.CheckConstraint("type IN ('friend_request', 'event_invite', 'invite_suggestion', 'event_public', 'friend_accepted', 'event_updated', 'event_cancelled', 'event_removed', 'rsvp_changed', 'suggestion_approved', 'suggestion_refused', 'event_reminder')", name='ck_notification_type'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
