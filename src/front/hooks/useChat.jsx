@@ -41,7 +41,7 @@ export const useChat = (roomId) => {
       id: `tmp-${Date.now()}`,
       room_id: roomId,
       sender_id: me?.id,
-      sender_email: me?.email,
+      sender_username: me?.username,
       text: body.text || null,
       media_url: body.media_url || null,
       media_type: body.media_type || null,

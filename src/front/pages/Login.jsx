@@ -11,6 +11,7 @@ import {
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { FiAtSign, FiLock, FiLogIn } from "react-icons/fi";
 import logoSideQuest from "../assets/img/logoSideQuest.png";
+import { ResetPasswordModal } from "../components/ResetPasswordModal";
 
 // Style coherent avec Friends / Profile / EventModal (dark mode, accents indigo)
 const AUTH_CSS = `
@@ -96,6 +97,7 @@ export const Login = () => {
 	const { dispatch } = useGlobalReducer();
 
 	const [identifier, setIdentifier] = useState("");
+	const [showReset, setShowReset] = useState(false);
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
@@ -201,6 +203,16 @@ export const Login = () => {
 						</Form>
 
 						<div className="text-center mt-4 text-secondary small">
+							<button
+								type="button"
+								className="sq-auth-link btn btn-link p-0"
+								onClick={() => setShowReset(true)}
+							>
+								Forgot your password?
+							</button>
+						</div>
+
+						<div className="text-center mt-2 text-secondary small">
 							No tienes cuenta ?{" "}
 							<Link to="/register" className="sq-auth-link">
 								Crear cuenta
@@ -209,6 +221,8 @@ export const Login = () => {
 					</Card>
 				</Container>
 			</div>
+
+			<ResetPasswordModal show={showReset} onHide={() => setShowReset(false)} />
 		</>
 	);
 };

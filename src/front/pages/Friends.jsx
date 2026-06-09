@@ -299,7 +299,7 @@ export const Friends = () => {
     try {
       const { friendship } = await apiSendRequest({ user_id: target.id });
       dispatch({ type: "add_outgoing_request", payload: friendship });
-      showToast(`Request sent to ${target.email}`);
+      showToast(`Request sent to ${target.username}`);
       setSearchResults((rs) =>
         rs.map((r) =>
           r.id === target.id
@@ -320,7 +320,7 @@ export const Friends = () => {
       const { friendship } = await apiAcceptRequest(req.id);
       dispatch({ type: "remove_incoming_request", payload: req.id });
       dispatch({ type: "add_friend", payload: friendship });
-      showToast(`You are now friends with ${req.friend.email}`);
+      showToast(`You are now friends with ${req.friend.username}`);
     } catch (e) {
       showToast(e.message, "danger");
     } finally {
@@ -333,7 +333,7 @@ export const Friends = () => {
     try {
       await apiRefuseRequest(req.id);
       dispatch({ type: "remove_incoming_request", payload: req.id });
-      showToast(`Request from ${req.friend.email} refused`);
+      showToast(`Request from ${req.friend.username} refused`);
     } catch (e) {
       showToast(e.message, "danger");
     } finally {
@@ -346,7 +346,7 @@ export const Friends = () => {
     try {
       await apiCancelRequest(req.id);
       dispatch({ type: "remove_outgoing_request", payload: req.id });
-      showToast(`Request to ${req.friend.email} cancelled`);
+      showToast(`Request to ${req.friend.username} cancelled`);
     } catch (e) {
       showToast(e.message, "danger");
     } finally {
@@ -361,7 +361,7 @@ export const Friends = () => {
     try {
       await apiUnfriend(target.friend.id);
       dispatch({ type: "remove_friend", payload: target.friend.id });
-      showToast(`${target.friend.email} removed from friends`);
+      showToast(`${target.friend.username} removed from friends`);
     } catch (e) {
       showToast(e.message, "danger");
     } finally {
@@ -379,7 +379,7 @@ export const Friends = () => {
     if (!searchQ || tab !== "friends") return store.friends || [];
     const q = searchQ.toLowerCase();
     return (store.friends || []).filter((f) =>
-      f.friend?.email?.toLowerCase().includes(q)
+      f.friend?.username?.toLowerCase().includes(q)
     );
   }, [store.friends, searchQ, tab]);
 
@@ -428,7 +428,7 @@ export const Friends = () => {
                 type="text"
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
-                placeholder="Search people by email (min. 2 chars)..."
+                placeholder="Search people by username (min. 2 chars)..."
                 className="bg-dark border-secondary text-light"
               />
               {searchQ && (
@@ -458,9 +458,9 @@ export const Friends = () => {
                         className="bg-transparent text-light border-secondary d-flex justify-content-between align-items-center"
                       >
                         <div className="d-flex align-items-center gap-3">
-                          <div style={avatarStyle(u.id)}>{initials(u.email)}</div>
+                          <div style={avatarStyle(u.id)}>{initials(u.username)}</div>
                           <div>
-                            <div className="fw-semibold">{u.email}</div>
+                            <div className="fw-semibold">{u.username}</div>
                             <div className="small text-secondary">
                               {u.status === "none" && "Not connected"}
                               {u.status === "pending" &&
@@ -535,14 +535,14 @@ export const Friends = () => {
                         <Link
                           to={`/friends/${f.friend.id}`}
                           className="stretched-link"
-                          aria-label={`Open ${f.friend.email}'s profile`}
+                          aria-label={`Open ${f.friend.username}'s profile`}
                         />
                         <div style={avatarStyle(f.friend.id)}>
-                          {initials(f.friend.email)}
+                          {initials(f.friend.username)}
                         </div>
                         <div className="flex-grow-1 min-w-0">
                           <div className="text-light fw-semibold text-truncate">
-                            {f.friend.email}
+                            {f.friend.username}
                           </div>
                           <div className="small text-secondary">
                             Friends since{" "}
@@ -600,10 +600,10 @@ export const Friends = () => {
                   >
                     <Link to={`/friends/${req.friend.id}`} className="friend-row-link d-flex align-items-center gap-3">
                       <div style={avatarStyle(req.friend.id)}>
-                        {initials(req.friend.email)}
+                        {initials(req.friend.username)}
                       </div>
                       <div>
-                        <div className="fw-semibold">{req.friend.email}</div>
+                        <div className="fw-semibold">{req.friend.username}</div>
                         <div className="small text-secondary">
                           Sent {new Date(req.created_at).toLocaleString()}
                         </div>
@@ -659,10 +659,10 @@ export const Friends = () => {
                   >
                     <Link to={`/friends/${req.friend.id}`} className="friend-row-link d-flex align-items-center gap-3">
                       <div style={avatarStyle(req.friend.id)}>
-                        {initials(req.friend.email)}
+                        {initials(req.friend.username)}
                       </div>
                       <div>
-                        <div className="fw-semibold">{req.friend.email}</div>
+                        <div className="fw-semibold">{req.friend.username}</div>
                         <div className="small text-secondary">
                           <FiClock className="me-1" />
                           Waiting since{" "}
@@ -698,7 +698,7 @@ export const Friends = () => {
         </Modal.Header>
         <Modal.Body>
           Are you sure you want to remove{" "}
-          <strong>{confirmRemove?.friend?.email}</strong> from your friends? This
+          <strong>{confirmRemove?.friend?.username}</strong> from your friends? This
           cannot be undone &mdash; you will need to send a new request to
           reconnect.
         </Modal.Body>

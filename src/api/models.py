@@ -58,7 +58,6 @@ class User(db.Model):
         return {
             "id":                  self.id,
             "username":            self.username,
-            "email":               self.email,
             "first_name":          self.first_name,
             "last_name":           self.last_name,
             "profile_picture_url": self.profile_picture_url,
@@ -124,7 +123,6 @@ class Event(db.Model):
         participants_data = [
             {
                 "id":                  p.id,
-                "email":               p.email,
                 "username":            p.username,
                 "profile_picture_url": p.profile_picture_url,
                 "rsvp":                rsvp_map.get(p.id),
@@ -149,7 +147,6 @@ class Event(db.Model):
             "image":              self.image,
             "is_public":          bool(self.is_public),
             "creator_id":         self.creator_id,
-            "creator_email":      self.creator.email if self.creator else None,
             "creator_username":   self.creator.username if self.creator else None,
             "creator_picture":    creator_picture,
             "participants":       participants_data,
@@ -159,7 +156,7 @@ class Event(db.Model):
                 {
                     "id":         inv.id,
                     "user_id":    inv.user_id,
-                    "user_email": inv.user.email if inv.user else None,
+                    "user_username": inv.user.username if inv.user else None,
                     "inviter_id": inv.inviter_id,
                 }
                 for inv in (self.invitations or [])
@@ -192,15 +189,13 @@ class Event(db.Model):
                     {
                         "id":                  s.id,
                         "suggested_user_id":   s.suggested_user_id,
-                        "suggested_user_email":
-                            s.suggested_user.email if s.suggested_user else None,
                         "suggested_user_username":
                             s.suggested_user.username if s.suggested_user else None,
                         "suggested_user_picture":
                             s.suggested_user.profile_picture_url if s.suggested_user else None,
                         "suggested_by_id":     s.suggested_by_id,
-                        "suggested_by_email":
-                            s.suggested_by.email if s.suggested_by else None,
+                        "suggested_by_username":
+                            s.suggested_by.username if s.suggested_by else None,
                         "created_at":
                             s.created_at.isoformat() + "Z" if s.created_at else None,
                     }
@@ -244,12 +239,12 @@ class Friendship(db.Model):
             "status":       self.status,
             "created_at":   self.created_at.isoformat() + "Z" if self.created_at else None,
             "updated_at":   self.updated_at.isoformat() + "Z" if self.updated_at else None,
-            "requester":    {"id": self.requester.id, "email": self.requester.email} if self.requester else None,
-            "addressee":    {"id": self.addressee.id, "email": self.addressee.email} if self.addressee else None,
+            "requester":    {"id": self.requester.id, "username": self.requester.username} if self.requester else None,
+            "addressee":    {"id": self.addressee.id, "username": self.addressee.username} if self.addressee else None,
         }
         if current_user_id is not None:
             other = self.addressee if self.requester_id == current_user_id else self.requester
-            data["friend"]    = {"id": other.id, "email": other.email} if other else None
+            data["friend"]    = {"id": other.id, "username": other.username} if other else None
             data["direction"] = "outgoing" if self.requester_id == current_user_id else "incoming"
         return data
 
@@ -356,7 +351,7 @@ class ChatRoom(db.Model):
                 "media_url":    last.media_url,
                 "media_type":   last.media_type,
                 "sender_id":    last.sender_id,
-                "sender_email": last.sender.email if last.sender else None,
+                "sender_username": last.sender.username if last.sender else None,
                 "created_at":   last.created_at.isoformat() + "Z" if last.created_at else None,
                 "edited_at":    last.edited_at.isoformat() + "Z" if last.edited_at else None,
                 "deleted":      last.deleted,
@@ -389,7 +384,7 @@ class ChatRoom(db.Model):
 
         if self.type == "event":
             base.update({
-                "participants":   [{"id": p.id, "email": p.email} for p in self.event.participants] if self.event else [],
+                "participants":   [{"id": p.id, "username": p.username} for p in self.event.participants] if self.event else [],
                 "event_title":    self.event.title if self.event else None,
                 "event_image":    self.event.image if self.event else None,
                 "dm_partner":     None,
@@ -402,12 +397,11 @@ class ChatRoom(db.Model):
             if current_user_id is not None:
                 partner = next((u for u in users if u.id != current_user_id), None)
             base.update({
-                "participants": [{"id": u.id, "email": u.email} for u in users],
+                "participants": [{"id": u.id, "username": u.username} for u in users],
                 "event_title":  None,
                 "event_image":  None,
                 "dm_partner":   {
                     "id":                  partner.id,
-                    "email":               partner.email,
                     "username":            partner.username,
                     "profile_picture_url": partner.profile_picture_url,
                 } if partner else None,
@@ -479,7 +473,7 @@ class ChatMessage(db.Model):
                 "id":           self.id,
                 "room_id":      self.room_id,
                 "sender_id":    self.sender_id,
-                "sender_email": self.sender.email if self.sender else None,
+                "sender_username": self.sender.username if self.sender else None,
                 "text":         None,
                 "media_url":    None,
                 "media_type":   None,
@@ -491,7 +485,7 @@ class ChatMessage(db.Model):
             "id":           self.id,
             "room_id":      self.room_id,
             "sender_id":    self.sender_id,
-            "sender_email": self.sender.email if self.sender else None,
+            "sender_username": self.sender.username if self.sender else None,
             "text":         self.text,
             "media_url":    self.media_url,
             "media_type":   self.media_type,
@@ -506,35 +500,35 @@ class ChatMessage(db.Model):
 # CheckConstraint below — keep both lists in sync when adding a new one):
 #
 #   FRIENDSHIP
-#     - "friend_request"       payload: {friendship_id, from_user_id, from_email}
-#     - "friend_accepted"      payload: {friendship_id, from_user_id, from_email}
+#     - "friend_request"       payload: {friendship_id, from_user_id, from_username}
+#     - "friend_accepted"      payload: {friendship_id, from_user_id, from_username}
 #
 #   EVENT INVITATIONS / VISIBILITY
 #     - "event_invite"         payload: {event_id, invitation_id, from_user_id,
-#                                        from_email, event_title, event_date, event_time}
+#                                        from_username, event_title, event_date, event_time}
 #     - "event_public"         payload: same as event_invite — sent to every
 #                                        friend when a public event is created/turned public
 #
 #   INVITE SUGGESTIONS
 #     - "invite_suggestion"    payload: {event_id, suggestion_id, suggested_user_id,
-#                                        suggested_user_email, from_user_id, from_email,
+#                                        suggested_username, from_user_id, from_username,
 #                                        event_title}                  (sent to creator)
 #     - "suggestion_approved"  payload: {event_id, event_title, suggested_user_id,
-#                                        suggested_user_email, from_user_id, from_email}
+#                                        suggested_username, from_user_id, from_username}
 #                                                                      (sent to suggester)
 #     - "suggestion_refused"   payload: same as suggestion_approved    (sent to suggester)
 #
 #   EVENT LIFECYCLE
 #     - "event_updated"        payload: {event_id, event_title, event_date, event_time,
-#                                        location, from_user_id, from_email}
+#                                        location, from_user_id, from_username}
 #                                        (sent to participants ≠ creator when meta changes)
 #     - "event_cancelled"      payload: {event_id, event_title, event_date, event_time,
-#                                        from_user_id, from_email}
+#                                        from_user_id, from_username}
 #                                        (sent to participants ≠ creator BEFORE delete)
-#     - "event_removed"        payload: {event_id, event_title, from_user_id, from_email}
+#     - "event_removed"        payload: {event_id, event_title, from_user_id, from_username}
 #                                        (sent to the user the creator just kicked out)
 #     - "rsvp_changed"         payload: {event_id, event_title, responder_id,
-#                                        responder_email, response}
+#                                        responder_username, response}
 #                                        (sent to creator when a participant changes rsvp)
 #     - "event_reminder"       payload: {event_id, event_title, event_date, event_time,
 #                                        hours_until}

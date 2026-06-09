@@ -310,9 +310,9 @@ const BELL_CSS = `
 // =====================================================
 const renderMessage = (n) => {
     const p = n.payload || {};
-    const from   = p.from_email          || "Someone";
+    const from   = p.from_username       || "Someone";
     const title  = p.event_title         || "an event";
-    const target = p.suggested_user_email || p.responder_email || "someone";
+    const target = p.suggested_username  || p.responder_username || "someone";
 
     switch (n.type) {
         case "friend_request": {

@@ -26,9 +26,9 @@ const getRoomLabel = (room, currentUserId) => {
   if (room.type === "event") return room.event_title || "Event chat";
   if (room.type === "dm") {
     const p = room.dm_partner;
-    if (p) return p.username || p.email || "Chat";
+    if (p) return p.username || "Chat";
     const other = room?.participants?.find((u) => u.id !== currentUserId);
-    return other?.email || "Chat";
+    return other?.username || "Chat";
   }
   return "Chat";
 };
@@ -612,7 +612,7 @@ const RoomItem = ({ room, currentUserId, active, onClick }) => {
 
 const FriendItem = ({ friend, onOpen, onStartDm }) => {
   const u = friend.user;
-  const label = u.username || u.email;
+  const label = u.username;
   const room = friend.room;
   const handle = () => (room ? onOpen(room) : onStartDm(u.id));
 
@@ -657,7 +657,7 @@ const MessageBubble = ({
 
   return (
     <div className={`sq-msg-row ${mine ? "mine" : ""}`}>
-      {!mine && <div className="sq-msg-sender">{m.sender_email}</div>}
+      {!mine && <div className="sq-msg-sender">{m.sender_username}</div>}
 
       {editing ? (
         <div className="sq-msg-edit">

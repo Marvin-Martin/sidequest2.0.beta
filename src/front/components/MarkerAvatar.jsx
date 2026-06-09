@@ -25,7 +25,7 @@ const initialLetter = (event) => {
   const candidate =
     event?.title?.trim() ||
     event?.creator_username?.trim() ||
-    event?.creator_email?.trim() ||
+    event?.creator_username?.trim() ||
     "?";
   return escapeHTML(candidate.charAt(0).toUpperCase());
 };

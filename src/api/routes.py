@@ -176,7 +176,7 @@ def _notify_rsvp_changed(event, responder, response):
             "event_id":        event.id,
             "event_title":     event.title,
             "responder_id":    responder.id,
-            "responder_email": responder.email,
+            "responder_username": responder.username,
             "response":        response,  # going | maybe | not_going
         },
     )
@@ -400,6 +400,42 @@ def login():
 
 
 # =========================================================
+# RESET PASSWORD (MVP — direct, no email/token)
+# =========================================================
+# Intentionally simple for the MVP: identify by email OR username and set a
+# new password immediately. This is NOT secure (anyone who knows a username
+# can change its password) and is meant to be replaced by an email-link flow
+# once a real sender domain is available.
+
+@api.route('/reset-password', methods=['POST'])
+def reset_password():
+    body = request.get_json() or {}
+    identifier = (
+        body.get("identifier")
+        or body.get("email")
+        or body.get("username")
+        or ""
+    ).strip()
+    password = body.get("password") or ""
+
+    if not identifier or not password:
+        return jsonify({"msg": "Email/username and new password are required"}), 400
+    if len(password) < 6:
+        return jsonify({"msg": "Password must be at least 6 characters"}), 400
+
+    lowered = identifier.lower()
+    user = User.query.filter(
+        or_(User.email == lowered, User.username == identifier)
+    ).first()
+    if not user:
+        return jsonify({"msg": "No account found with that email or username"}), 404
+
+    user.password = generate_password_hash(password)
+    db.session.commit()
+    return jsonify({"msg": "Password updated. You can now log in."}), 200
+
+
+# =========================================================
 # PRIVATE
 # =========================================================
 
@@ -494,7 +530,7 @@ def create_event():
                 "event_id": event.id,
                 "invitation_id": inv.id,
                 "from_user_id": current_user_id,
-                "from_email": creator.email,
+                "from_username": creator.username,
                 "event_title": event.title,
                 "event_date": event.date,
                 "event_time": event.time,
@@ -627,7 +663,7 @@ def update_event(event_id):
                         "event_id": event.id,
                         "invitation_id": inv.id,
                         "from_user_id": current_user_id,
-                        "from_email": creator.email if creator else None,
+                        "from_username": creator.username if creator else None,
                         "event_title": event.title,
                         "event_date": event.date,
                         "event_time": event.time,
@@ -642,7 +678,7 @@ def update_event(event_id):
             event, "event_updated",
             payload_extra={
                 "from_user_id":    current_user_id,
-                "from_email":      creator.email if creator else None,
+                "from_username":      creator.username if creator else None,
                 "location":        event.location,
                 "changed_fields":  meta_changed_fields,
             },
@@ -710,7 +746,7 @@ def invite_to_event(event_id):
                 "event_id": event.id,
                 "invitation_id": inv.id,
                 "from_user_id": current_user_id,
-                "from_email": creator.email,
+                "from_username": creator.username,
                 "event_title": event.title,
                 "event_date": event.date,
                 "event_time": event.time,
@@ -933,7 +969,7 @@ def delete_event(event_id):
         event, "event_cancelled",
         payload_extra={
             "from_user_id": current_user_id,
-            "from_email":   creator.email if creator else None,
+            "from_username":   creator.username if creator else None,
         },
     )
 
@@ -998,7 +1034,7 @@ def remove_participant(event_id, user_id):
                     "event_id":     event.id,
                     "event_title":  event.title,
                     "from_user_id": current_user_id,
-                    "from_email":   creator.email if creator else None,
+                    "from_username":   creator.username if creator else None,
                 },
             )
         db.session.commit()
@@ -1018,7 +1054,7 @@ def remove_participant(event_id, user_id):
                     "event_id":     event.id,
                     "event_title":  event.title,
                     "from_user_id": current_user_id,
-                    "from_email":   creator.email if creator else None,
+                    "from_username":   creator.username if creator else None,
                 },
             )
         db.session.commit()
@@ -1107,9 +1143,9 @@ def suggest_invite_to_event(event_id):
                 "event_id":              event.id,
                 "suggestion_id":         sug.id,
                 "suggested_user_id":     target.id,
-                "suggested_user_email":  target.email,
+                "suggested_username":  target.username,
                 "from_user_id":          current_user_id,
-                "from_email":            me.email,
+                "from_username":            me.username,
                 "event_title":           event.title,
             },
         )
@@ -1158,7 +1194,7 @@ def _approve_suggestion_internal(event, sug):
     suggester_id = sug.suggested_by_id
     suggester_user = sug.suggested_by
     target_id_snapshot = sug.suggested_user_id
-    target_email_snapshot = target.email if target else None
+    target_username_snapshot = target.username if target else None
 
     if not target:
         # Suggested user got deleted in the meantime — drop the suggestion
@@ -1181,9 +1217,9 @@ def _approve_suggestion_internal(event, sug):
                     "event_id":              event.id,
                     "event_title":           event.title,
                     "suggested_user_id":     target_id_snapshot,
-                    "suggested_user_email":  target_email_snapshot,
+                    "suggested_username":  target_username_snapshot,
                     "from_user_id":          event.creator_id,
-                    "from_email":            creator.email if creator else None,
+                    "from_username":            creator.username if creator else None,
                     "already_member":        True,
                 },
             )
@@ -1204,9 +1240,9 @@ def _approve_suggestion_internal(event, sug):
                     "event_id":              event.id,
                     "event_title":           event.title,
                     "suggested_user_id":     target_id_snapshot,
-                    "suggested_user_email":  target_email_snapshot,
+                    "suggested_username":  target_username_snapshot,
                     "from_user_id":          event.creator_id,
-                    "from_email":            creator.email if creator else None,
+                    "from_username":            creator.username if creator else None,
                     "already_invited":       True,
                 },
             )
@@ -1224,7 +1260,7 @@ def _approve_suggestion_internal(event, sug):
             "event_id":      event.id,
             "invitation_id": inv.id,
             "from_user_id":  event.creator_id,
-            "from_email":    creator.email if creator else None,
+            "from_username":    creator.username if creator else None,
             "event_title":   event.title,
             "event_date":    event.date,
             "event_time":    event.time,
@@ -1238,9 +1274,9 @@ def _approve_suggestion_internal(event, sug):
                 "event_id":              event.id,
                 "event_title":           event.title,
                 "suggested_user_id":     target_id_snapshot,
-                "suggested_user_email":  target_email_snapshot,
+                "suggested_username":  target_username_snapshot,
                 "from_user_id":          event.creator_id,
-                "from_email":            creator.email if creator else None,
+                "from_username":            creator.username if creator else None,
             },
         )
     _mark_invite_suggestion_notifications_read(event.id, suggestion_id=sug.id)
@@ -1291,7 +1327,7 @@ def refuse_suggestion(event_id, suggestion_id):
     suggester_id = sug.suggested_by_id
     target_snapshot = sug.suggested_user
     target_id_snap = sug.suggested_user_id
-    target_email_snap = target_snapshot.email if target_snapshot else None
+    target_username_snap = target_snapshot.username if target_snapshot else None
 
     _mark_invite_suggestion_notifications_read(
         event_id, suggestion_id=suggestion_id)
@@ -1305,9 +1341,9 @@ def refuse_suggestion(event_id, suggestion_id):
                 "event_id":              event_id,
                 "event_title":           event.title,
                 "suggested_user_id":     target_id_snap,
-                "suggested_user_email":  target_email_snap,
+                "suggested_username":  target_username_snap,
                 "from_user_id":          current_user_id,
-                "from_email":            creator.email if creator else None,
+                "from_username":            creator.username if creator else None,
             },
         )
 
@@ -1363,7 +1399,7 @@ def refuse_all_suggestions(event_id):
         {
             "suggester_id":     s.suggested_by_id,
             "target_id":        s.suggested_user_id,
-            "target_email":     s.suggested_user.email if s.suggested_user else None,
+            "target_username":     s.suggested_user.username if s.suggested_user else None,
         }
         for s in pending
     ]
@@ -1381,9 +1417,9 @@ def refuse_all_suggestions(event_id):
                     "event_id":              event_id,
                     "event_title":           event.title,
                     "suggested_user_id":     snap["target_id"],
-                    "suggested_user_email":  snap["target_email"],
+                    "suggested_username":  snap["target_username"],
                     "from_user_id":          current_user_id,
-                    "from_email":            creator.email if creator else None,
+                    "from_username":            creator.username if creator else None,
                 },
             )
 
@@ -1475,7 +1511,7 @@ def send_friend_request():
             user_id=target.id,
             notif_type="friend_request",
             payload={"friendship_id": existing.id,
-                     "from_user_id": current_user_id, "from_email": me.email},
+                     "from_user_id": current_user_id, "from_username": me.username},
         )
         db.session.commit()
         return jsonify({
@@ -1492,7 +1528,7 @@ def send_friend_request():
         user_id=target.id,
         notif_type="friend_request",
         payload={"friendship_id": new_friendship.id,
-                 "from_user_id": current_user_id, "from_email": me.email},
+                 "from_user_id": current_user_id, "from_username": me.username},
     )
 
     db.session.commit()
@@ -1526,7 +1562,7 @@ def accept_friend_request(request_id):
         payload={
             "friendship_id": friendship.id,
             "from_user_id":  current_user_id,
-            "from_email":    me.email if me else None,
+            "from_username":    me.username if me else None,
         },
     )
 
@@ -1602,7 +1638,7 @@ def search_users():
         return jsonify({"msg": "q must be at least 2 characters"}), 400
 
     users = (User.query
-             .filter(User.id != current_user_id, User.email.ilike(f"%{q}%"))
+             .filter(User.id != current_user_id, User.username.ilike(f"%{q}%"))
              .limit(20)
              .all())
 
@@ -1615,7 +1651,7 @@ def search_users():
         ).first()
         results.append({
             "id": u.id,
-            "email": u.email,
+            "username": u.username,
             "status": pair.status if pair else "none",
             "direction": (
                 "outgoing" if pair and pair.requester_id == current_user_id
@@ -1746,8 +1782,9 @@ def get_user_profile(user_id):
         "profile_picture_url": user.profile_picture_url,
         "created_at":          user.created_at.isoformat() + "Z" if user.created_at else None,
     }
-    if is_self or is_friend:
+    if is_self:
         data["email"] = user.email
+    if is_self or is_friend:
         data["phone"] = user.phone
         data["birthdate"] = user.birthdate
 
@@ -1888,7 +1925,7 @@ def chat_search():
         other = f.addressee if f.requester_id == current_user_id else f.requester
         if not other:
             continue
-        if q_low not in (other.email or "").lower() and q_low not in (other.username or "").lower():
+        if q_low not in (other.username or "").lower():
             continue
         ua, ub = sorted([current_user_id, other.id])
         dm = ChatRoom.query.filter_by(
@@ -1896,7 +1933,6 @@ def chat_search():
         friends.append({
             "user": {
                 "id": other.id,
-                "email": other.email,
                 "username": other.username,
                 "profile_picture_url": other.profile_picture_url,
             },

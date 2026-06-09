@@ -10,6 +10,7 @@ import {
 } from "react-bootstrap";
 import { FiMail, FiLock, FiUserPlus, FiAtSign } from "react-icons/fi";
 import logoSideQuest from "../assets/img/logoSideQuest.png";
+import { ResetPasswordModal } from "../components/ResetPasswordModal";
 
 // Style coherent avec Friends / Profile / EventModal (dark mode, accents indigo).
 const AUTH_CSS = `
@@ -77,6 +78,7 @@ const AUTH_CSS = `
 export const Register = () => {
 	const navigate = useNavigate();
 
+	const [showReset, setShowReset] = useState(false);
 	const [email, setEmail] = useState("");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -204,9 +206,21 @@ export const Register = () => {
 								Iniciar sesion
 							</Link>
 						</div>
+
+						<div className="text-center mt-2 text-secondary small">
+							<button
+								type="button"
+								className="sq-auth-link btn btn-link p-0"
+								onClick={() => setShowReset(true)}
+							>
+								Forgot your password?
+							</button>
+						</div>
 					</Card>
 				</Container>
 			</div>
+
+			<ResetPasswordModal show={showReset} onHide={() => setShowReset(false)} />
 		</>
 	);
 };
