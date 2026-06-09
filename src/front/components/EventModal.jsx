@@ -1296,7 +1296,7 @@ export const EventModal = ({
             {eventData.creator_picture ? (
               <img
                 src={eventData.creator_picture}
-                alt={eventData.creator_username}
+                alt={eventData.creator_email}
                 className="sq-creator-avatar"
               />
             ) : (
@@ -1308,13 +1308,13 @@ export const EventModal = ({
                   background: "linear-gradient(135deg, #6366f1, #ec4899)",
                 }}
               >
-                {initials(eventData.creator_username || "")}
+                {initials(eventData.creator_email || "")}
               </div>
             )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "0.78rem", color: "#6c757d" }}>Creado por</div>
               <strong style={{ color: "#e9ecef", fontSize: "0.9rem" }}>
-                {eventData.creator_username || eventData.creator_username}
+                {eventData.creator_username || eventData.creator_email}
               </strong>
             </div>
             {eventData.going_count > 0 && (
@@ -1569,13 +1569,13 @@ export const EventModal = ({
                             {p.profile_picture_url ? (
                               <img
                                 src={p.profile_picture_url}
-                                alt={p.username}
+                                alt={p.email}
                                 style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "1px solid #262a36" }}
                               />
                             ) : (
-                              <div style={avatarStyle(p.id)}>{initials(p.username)}</div>
+                              <div style={avatarStyle(p.id)}>{initials(p.email)}</div>
                             )}
-                            <span>{p.username}</span>
+                            <span>{p.email}</span>
                             {p.id === eventData?.creator_id && (
                               <Badge bg="info" className="ms-1">Creator</Badge>
                             )}
@@ -1638,13 +1638,13 @@ export const EventModal = ({
                                 {u.profile_picture_url ? (
                                   <img
                                     src={u.profile_picture_url}
-                                    alt={u.username}
+                                    alt={u.email}
                                     style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "1px solid #262a36" }}
                                   />
                                 ) : (
-                                  <div style={avatarStyle(u.id)}>{initials(u.username)}</div>
+                                  <div style={avatarStyle(u.id)}>{initials(u.email)}</div>
                                 )}
-                                <span style={{ flex: 1 }}>{u.username}</span>
+                                <span style={{ flex: 1 }}>{u.email}</span>
                                 {isPending ? (
                                   <Badge bg="secondary">
                                     <FiClock className="me-1" /> Pending
@@ -1696,13 +1696,13 @@ export const EventModal = ({
                                 {u.profile_picture_url ? (
                                   <img
                                     src={u.profile_picture_url}
-                                    alt={u.username}
+                                    alt={u.email}
                                     style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "1px solid #262a36" }}
                                   />
                                 ) : (
-                                  <div style={avatarStyle(u.id)}>{initials(u.username)}</div>
+                                  <div style={avatarStyle(u.id)}>{initials(u.email)}</div>
                                 )}
-                                <span style={{ flex: 1 }}>{u.username}</span>
+                                <span style={{ flex: 1 }}>{u.email}</span>
                                 {isPending ? (
                                   <Badge bg="secondary">
                                     <FiClock className="me-1" /> Pending
@@ -1746,13 +1746,13 @@ export const EventModal = ({
                               {u.profile_picture_url ? (
                                 <img
                                   src={u.profile_picture_url}
-                                  alt={u.username}
+                                  alt={u.email}
                                   style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "1px solid #262a36" }}
                                 />
                               ) : (
-                                <div style={avatarStyle(u.id)}>{initials(u.username)}</div>
+                                <div style={avatarStyle(u.id)}>{initials(u.email)}</div>
                               )}
-                              <span>{u.username}</span>
+                              <span>{u.email}</span>
                             </div>
                             <Form.Check
                               type="checkbox"
@@ -1815,25 +1815,25 @@ export const EventModal = ({
                       </div>
                     </div>
                     {suggestions.map((s) => {
-                      const target = { username: s.suggested_user_username, id: s.suggested_user_id, profile_picture_url: s.suggested_user_picture };
-                      const from   = { username: s.suggested_by_username, id: s.suggested_by_id };
+                      const target = s.suggested_user || {};
+                      const from   = s.suggested_by || {};
                       return (
                         <div key={s.id} className="sq-suggestion-row">
                           {target.profile_picture_url ? (
                             <img
                               src={target.profile_picture_url}
-                              alt={target.username}
+                              alt={target.email}
                               className="sq-suggestion-avatar"
                             />
                           ) : (
                             <div className="sq-suggestion-avatar" style={avatarStyle(target.id || 0)}>
-                              {initials(target.username || "")}
+                              {initials(target.email || "")}
                             </div>
                           )}
                           <div className="sq-suggestion-body">
-                            <strong>{target.username ? `@${target.username}` : `User #${s.suggested_user_id}`}</strong>
+                            <strong>{target.email || `User #${s.suggested_user_id}`}</strong>
                             <div className="sq-suggestion-from">
-                              Sugerido por <strong>{from.username ? `@${from.username}` : `User #${s.suggested_by_id}`}</strong>
+                              Sugerido por <strong>{from.email || `User #${s.suggested_by_id}`}</strong>
                             </div>
                           </div>
                           <div className="d-flex gap-2">
@@ -1882,7 +1882,7 @@ export const EventModal = ({
                       return (
                         <div key={m.id} className={`chat-msg ${mine ? "mine" : ""}`}>
                           {!mine && (
-                            <div className="meta">{m.sender_username}</div>
+                            <div className="meta">{m.sender_email}</div>
                           )}
 
                           {isEditing ? (

@@ -52,7 +52,13 @@ export const LandingPage = () => {
 				</nav>
 			</header>
 
-			<main className="lp-container">
+			{/* NOTA SEMÁNTICA: este wrapper ANTES era <main>. Como ahora
+			    Layout.jsx envuelve todas las rutas en un <main> global
+			    para que TODA la app tenga un punto de entrada accesible
+			    consistente, aquí bajamos a <section> para no anidar dos
+			    <main> (HTML5 inválido). Misma clase, mismo CSS, cero
+			    impacto visual. */}
+			<section className="lp-container">
 				{/* ── Hero wordmark ──────────────────────────────────── */}
 				<section className="lp-hero">
 					<img
@@ -115,7 +121,7 @@ export const LandingPage = () => {
 				<p className="lp-closing">
 					A <b>social network</b> to <b>delete</b> your other social networks.
 				</p>
-			</main>
+			</section>
 
 			{/* ── Footer ─────────────────────────────────────────────── */}
 			<footer className="lp-footer">

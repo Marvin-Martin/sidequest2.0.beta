@@ -310,6 +310,12 @@ const Messages = () => {
 
   return (
     <Container fluid className="sq-msg-page">
+      {/* SEMÁNTICA: h1 invisible para que Google y screen-readers
+          tengan un título de página claro. El "Tus Chats" visible
+          ya está como h5 dentro del list-header. */}
+      <h1 className="visually-hidden">
+        SideQuest — Messages and chats
+      </h1>
       <Row className="g-0 sq-msg-layout">
         {/* ─────── LISTA ─────── */}
         <Col

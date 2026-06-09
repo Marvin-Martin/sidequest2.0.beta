@@ -10,9 +10,18 @@ import { Mapview } from "../components/Mapview";
 // owned internally by <Mapview/>, so we do not render any EventCard
 // or EventModal here either; that previously caused the modal to
 // open twice on every marker click.
+//
+// SEMÁNTICA / SEO: el mapa por sí solo no es scrapable por Google,
+// así que añadimos un <h1> invisible (.visually-hidden = Bootstrap)
+// para que el crawler tenga un título de página claro. Los lectores
+// de pantalla lo leen también ("estás en la página principal — mapa
+// de eventos cerca de ti"). El usuario vidente no lo ve.
 export const Home = () => {
 	return (
 		<div className="home-page">
+			<h1 className="visually-hidden">
+				SideQuest — Map of events near you
+			</h1>
 			<Mapview />
 		</div>
 	);

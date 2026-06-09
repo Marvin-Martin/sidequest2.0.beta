@@ -844,8 +844,9 @@ export const Navbar = () => {
                                     variant="dark"
                                     className="sq-filter-toggle position-relative border-0 p-1"
                                     title="Filter events on the map"
+                                    aria-label="Filter events on the map"
                                 >
-                                    <FiFilter size={20} color="white" />
+                                    <FiFilter size={20} color="white" aria-hidden="true" />
                                     {activeFilterCount > 0 && (
                                         <Badge pill className="sq-filter-badge ms-1">
                                             {activeFilterCount}
@@ -941,14 +942,16 @@ export const Navbar = () => {
                                     className="position-relative border-0 p-2"
                                     onClick={() => setShowMessages(true)}
                                     title="My messages"
+                                    aria-label={`My messages${chatUnread > 0 ? ` (${chatUnread} unread)` : ""}`}
                                 >
-                                    <FiMail size={24} color="white" />
+                                    <FiMail size={24} color="white" aria-hidden="true" />
                                     {chatUnread > 0 && (
                                         <Badge
                                             bg="danger"
                                             pill
                                             className="position-absolute top-0 start-100 translate-middle"
                                             style={{ fontSize: "0.65rem" }}
+                                            aria-hidden="true"
                                         >
                                             {chatUnread > 99 ? "99+" : chatUnread}
                                         </Badge>
@@ -960,8 +963,10 @@ export const Navbar = () => {
                                         as={Button}
                                         variant="dark"
                                         className="sq-menu-toggle border-0"
+                                        aria-label="Open user menu"
+                                        title="Menu"
                                     >
-                                        <FiMenu size={28} color="white" />
+                                        <FiMenu size={28} color="white" aria-hidden="true" />
                                     </Dropdown.Toggle>
 
                                     <Dropdown.Menu className="sq-menu-dropdown">
